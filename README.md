@@ -7,15 +7,22 @@ Personal brand site built with an SRE dashboard aesthetic.
 ## Project Structure
 
 ```
-dpugh-profile/
-├── index.html          # Single-page layout — all sections
+dwayne.pugh/
+├── index.html               # Single-page profile — all sections
+├── resume.md                # THE résumé. Edit this; everything else is generated from it
+├── resume.html              # Styled résumé page; renders resume.md in the browser
+├── resume-print.html        # Plain layout used only to print the PDF (not linked)
+├── assets/
+│   └── dwayne-pugh-resume.pdf   # Built from resume.md; the page's download button
+├── scripts/
+│   └── build-resume-pdf.sh  # resume.md → assets/dwayne-pugh-resume.pdf
 ├── css/
-│   ├── tokens.css      # Design tokens (colors, type, spacing) — edit here first
-│   └── main.css        # Component & layout styles
+│   ├── tokens.css           # Design tokens (colors, type, spacing) — edit here first
+│   └── main.css             # Component & layout styles
 ├── js/
-│   └── main.js         # Nav, clock, uptime, scroll reveal
-└── assets/
-    └── dwayne_pugh_resume_2026.02.13.pdf   # (copy from existing repo)
+│   ├── main.js              # Nav, clock, uptime, scroll reveal
+│   └── resume.js            # Markdown → résumé renderer (site and print modes)
+└── .nojekyll                # Turns off Jekyll so GitHub Pages serves resume.md as-is
 ```
 
 ---
@@ -43,6 +50,59 @@ consoles. Costs nothing in performance (pure CSS background-image).
 
 ---
 
+## Updating the résumé
+
+1. Edit `resume.md`.
+2. Run `scripts/build-resume-pdf.sh` (needs Chrome or Chromium and Python 3).
+3. Commit **both** `resume.md` and `assets/dwayne-pugh-resume.pdf`.
+
+The site page picks up `resume.md` on the next deploy. The PDF only changes
+when you run the script, so skipping step 2 leaves a stale download.
+
+Preview the page locally with `python3 -m http.server` and open
+http://localhost:8000/resume.html (opening the file directly won't load `resume.md`).
+
+### Conventions `resume.md` must follow
+
+| Write | Renders as |
+|---|---|
+| `# Name`, then a title line, then a contact line split by ` · ` | Page header |
+| `## Section` | Section |
+| `### Employer — City` (no ` · `) | Employer heading that groups the roles under it |
+| `### or #### Role · Dates` (has ` · `) | One job card; the text after the last ` · ` is the date |
+| `*Italic line*` right under a role | The org/clients line on the card |
+| Skills: `- **Label:** a, b, c` | One skill group of tags (use `;` between tags if a tag has commas) |
+| Education: `### Degree — School · Year` | Degree card |
+| Education: `**Certifications:** a · b · c` | Cert chips |
+
+The phone number is left out on purpose: this file and the PDF are public.
+Use the private PDF (with phone) for applications that need it.
+
+### Why it works this way
+
+- **Decision:** one Markdown file is the source for both the web page and the PDF.
+  The browser renders it with a ~250-line vanilla script (`js/resume.js`); the PDF
+  is the same renderer in a plain print layout, printed by headless Chrome.
+- **Why:** before this, the résumé was hand-copied into HTML and drifted from the
+  PDF, and printing the styled page produced 7 pages. Now there is one place to
+  edit and the PDF comes out at 3 pages.
+- **Alternatives considered:**
+  - *Pandoc* (md → PDF/HTML): mature, but a new install, and its output would not
+    share the site's markup or styles.
+  - *GitHub Action that builds the PDF on push*: removes the manual step, but the
+    Action would have to commit back to the repo or publish elsewhere; more moving
+    parts than one script.
+  - *A Markdown library from a CDN* (marked, markdown-it): handles more syntax, but
+    adds a third-party dependency and still needs custom code to turn headings into
+    job cards and skill tags.
+  - *Jekyll* (already on Pages): could render the Markdown server-side, but the
+    site is plain HTML and Jekyll's layout system isn't otherwise used.
+- **Revisit when:** the PDF goes stale more than once (add a CI check or an Action
+  that builds it), `resume.md` needs Markdown the renderer doesn't support, or a
+  second résumé variant (e.g. instructor-focused) is needed.
+
+---
+
 ## Deployment to GitHub Pages
 
 This repo is designed to drop directly into your existing GitHub Pages setup.
@@ -53,8 +113,8 @@ This repo is designed to drop directly into your existing GitHub Pages setup.
 # In your local clone of dpugh143.github.io/demo-profile
 cp -r /path/to/dpugh-profile/* .
 
-# Copy your resume into assets/ if not already there
-cp assets/dwayne_pugh_resume_2026.02.13.pdf assets/
+# Rebuild the résumé PDF if resume.md changed
+scripts/build-resume-pdf.sh
 
 git add .
 git commit -m "feat: operational profile v2.0 — SRE dashboard aesthetic"
@@ -112,7 +172,7 @@ them in `main.css`. Never hardcode hex values in component styles.
 
 ## Performance Notes
 
-- Zero JavaScript dependencies — vanilla JS only
+- Zero JavaScript dependencies — vanilla JS only (including the résumé renderer)
 - Fonts loaded via Google Fonts with `display=swap` for performance
 - Scroll reveal respects `prefers-reduced-motion`
 - IntersectionObserver used instead of scroll listeners
