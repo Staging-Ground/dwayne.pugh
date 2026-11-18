@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!--
+  Print layout for the résumé PDF. Not linked from the site.
+  scripts/build-resume-pdf.sh prints this page to assets/dwayne-pugh-resume.pdf.
+  Content comes from resume.md via js/resume.js, so edit resume.md, not this file.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Dwayne Pugh — Résumé</title>
+  <style>
+    @page { size: Letter; margin: 0.6in 0.7in; }
+
+    :root {
+      --ink: #1a1a1a;
+      --muted: #555;
+      --rule: #cfcfcf;
+      --accent: #1f4e79;
+      --serif: Georgia, "Source Serif 4", "DejaVu Serif", serif;
+      --sans: "Inter", "Helvetica Neue", Arial, "Liberation Sans", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0 16px;
+      background: #fff;
+      color: var(--ink);
+      font: 10pt/1.38 var(--sans);
+    }
+
+    #resume-body { max-width: 7.1in; margin: 0 auto; }
+
+    @media print { body { padding: 0; } }
+
+    a { color: var(--accent); text-decoration: none; }
+
+    .head { margin-bottom: 10pt; }
+    h1 { font: 400 24pt/1.1 var(--serif); margin: 0 0 3pt; }
+    .head__title { font-weight: 600; margin: 0 0 3pt; font-size: 10.5pt; }
+    .head__contact { margin: 0; color: var(--muted); font-size: 9pt; }
+
+    h2 {
+      font: 400 13.5pt/1.2 var(--serif);
+      margin: 12pt 0 5pt;
+      padding-bottom: 2pt;
+      border-bottom: 1px solid var(--rule);
+      break-after: avoid;
+    }
+
+    h3, h4 { margin: 7pt 0 2pt; font-size: 10pt; break-after: avoid; }
+    h3.employer { font-weight: 700; margin-top: 9pt; }
+
+    .entry__head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12pt;
+      font-weight: 600;
+    }
+    h4.entry__head { font-style: italic; font-weight: 500; }
+    .entry__date { font-weight: 400; font-style: normal; color: var(--muted); white-space: nowrap; text-align: right; }
+
+    p { margin: 2pt 0 4pt; }
+    ul { margin: 2pt 0 4pt; padding-left: 14pt; }
+    li { margin: 0 0 2pt; break-inside: avoid; }
+    strong { font-weight: 600; }
+
+    .fallback { color: #a00; }
+  </style>
+</head>
+<body>
+  <main id="resume-body"></main>
+  <p class="fallback" id="resume-fallback" hidden>resume.md failed to load. Serve the repo over HTTP (see scripts/build-resume-pdf.sh).</p>
+  <script src="js/resume.js"></script>
+  <script>ResumeRender.mount('print');</script>
+</body>
+</html>
