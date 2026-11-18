@@ -9,19 +9,18 @@ Personal brand site built with an SRE dashboard aesthetic.
 ```
 dwayne.pugh/
 ├── index.html               # Single-page profile — all sections
-├── resume.md                # THE résumé. Edit this; everything else is generated from it
+├── resume.md                # Résumé text for the web page
 ├── resume.html              # Styled résumé page; renders resume.md in the browser
-├── resume-print.html        # Plain layout used only to print the PDF (not linked)
 ├── assets/
-│   └── dwayne-pugh-resume.pdf   # Built from resume.md; the page's download button
+│   └── dwayne-pugh-resume.pdf   # Public PDF (no phone); the page's download button
 ├── scripts/
-│   └── build-resume-pdf.sh  # resume.md → assets/dwayne-pugh-resume.pdf
+│   └── make-public-resume-pdf.py  # private PDF → assets/dwayne-pugh-resume.pdf, phone removed
 ├── css/
 │   ├── tokens.css           # Design tokens (colors, type, spacing) — edit here first
 │   └── main.css             # Component & layout styles
 ├── js/
 │   ├── main.js              # Nav, clock, uptime, scroll reveal
-│   └── resume.js            # Markdown → résumé renderer (site and print modes)
+│   └── resume.js            # Markdown → résumé page renderer
 └── .nojekyll                # Turns off Jekyll so GitHub Pages serves resume.md as-is
 ```
 
@@ -52,12 +51,25 @@ consoles. Costs nothing in performance (pure CSS background-image).
 
 ## Updating the résumé
 
-1. Edit `resume.md`.
-2. Run `scripts/build-resume-pdf.sh` (needs Chrome or Chromium and Python 3).
-3. Commit **both** `resume.md` and `assets/dwayne-pugh-resume.pdf`.
+The résumé has two outputs, made two ways:
 
-The site page picks up `resume.md` on the next deploy. The PDF only changes
-when you run the script, so skipping step 2 leaves a stale download.
+| Output | Source | How it updates |
+|---|---|---|
+| Web page (`resume.html`) | `resume.md` | Edit `resume.md`; the page renders it on load |
+| Download (`assets/dwayne-pugh-resume.pdf`) | The Claude Docs résumé, exported to PDF | Run the script below on the export |
+
+When the résumé changes:
+
+1. Edit the Claude Docs résumé and export it to PDF into `~/Desktop/PughBusiness/resumes/`.
+   That private copy keeps the phone number.
+2. Make the public copy (phone number removed):
+   ```bash
+   python3 -m venv .venv && .venv/bin/pip install pymupdf      # once
+   .venv/bin/python scripts/make-public-resume-pdf.py ~/Desktop/PughBusiness/resumes/<file>.pdf
+   ```
+   The script refuses to write a file that still contains a phone number.
+3. Copy the same changes into `resume.md` (no phone number) so the web page matches.
+4. Commit `resume.md` and `assets/dwayne-pugh-resume.pdf` together.
 
 Preview the page locally with `python3 -m http.server` and open
 http://localhost:8000/resume.html (opening the file directly won't load `resume.md`).
@@ -75,31 +87,32 @@ http://localhost:8000/resume.html (opening the file directly won't load `resume.
 | Education: `### Degree — School · Year` | Degree card |
 | Education: `**Certifications:** a · b · c` | Cert chips |
 
-The phone number is left out on purpose: this file and the PDF are public.
-Use the private PDF (with phone) for applications that need it.
+The phone number stays out of this repo entirely (it is public): not in `resume.md`,
+not in the PDF, and not in the script, which finds the number by pattern.
 
 ### Why it works this way
 
-- **Decision:** one Markdown file is the source for both the web page and the PDF.
-  The browser renders it with a ~250-line vanilla script (`js/resume.js`); the PDF
-  is the same renderer in a plain print layout, printed by headless Chrome.
-- **Why:** before this, the résumé was hand-copied into HTML and drifted from the
-  PDF, and printing the styled page produced 7 pages. Now there is one place to
-  edit and the PDF comes out at 3 pages.
+- **Decision:** the web page renders `resume.md` with a ~200-line vanilla script
+  (`js/resume.js`), keeping the site's card-and-tag look. The download is the
+  Claude Docs export with the phone number removed, so the PDF looks like a
+  document, not like the website.
+- **History:** the first version also generated the PDF from `resume.md` (headless
+  Chrome printing a plain layout). It worked, but the result looked worse than the
+  Claude Docs export, which is the version that goes to employers. That step was dropped.
+- **Trade-off:** the résumé text now lives in two places (the Claude Doc and
+  `resume.md`), so they can drift. Step 3 above is the manual sync.
 - **Alternatives considered:**
-  - *Pandoc* (md → PDF/HTML): mature, but a new install, and its output would not
-    share the site's markup or styles.
-  - *GitHub Action that builds the PDF on push*: removes the manual step, but the
-    Action would have to commit back to the repo or publish elsewhere; more moving
-    parts than one script.
-  - *A Markdown library from a CDN* (marked, markdown-it): handles more syntax, but
-    adds a third-party dependency and still needs custom code to turn headings into
-    job cards and skill tags.
-  - *Jekyll* (already on Pages): could render the Markdown server-side, but the
-    site is plain HTML and Jekyll's layout system isn't otherwise used.
-- **Revisit when:** the PDF goes stale more than once (add a CI check or an Action
-  that builds it), `resume.md` needs Markdown the renderer doesn't support, or a
-  second résumé variant (e.g. instructor-focused) is needed.
+  - *Generate the PDF from `resume.md`* (headless Chrome or Pandoc): one source, but
+    matching the Claude Docs typography (Anthropic Serif/Sans) isn't possible locally.
+  - *Redact the phone and leave a gap*: simpler, but leaves a visible hole in the contact line.
+  - *A Markdown library from a CDN* (marked, markdown-it): adds a dependency and still
+    needs custom code for job cards and skill tags.
+  - *Jekyll* (already on Pages): could render the Markdown server-side, but the site
+    is plain HTML and doesn't otherwise use Jekyll.
+- **Revisit when:** the page and the PDF drift apart more than once (generate
+  `resume.md` from the Docs Markdown export instead of hand-copying), or the
+  Claude Docs layout changes and the contact line no longer matches what the
+  script expects.
 
 ---
 
@@ -113,8 +126,8 @@ This repo is designed to drop directly into your existing GitHub Pages setup.
 # In your local clone of dpugh143.github.io/demo-profile
 cp -r /path/to/dpugh-profile/* .
 
-# Rebuild the résumé PDF if resume.md changed
-scripts/build-resume-pdf.sh
+# Refresh the public résumé PDF if the résumé changed (see "Updating the résumé")
+.venv/bin/python scripts/make-public-resume-pdf.py ~/Desktop/PughBusiness/resumes/<file>.pdf
 
 git add .
 git commit -m "feat: operational profile v2.0 — SRE dashboard aesthetic"

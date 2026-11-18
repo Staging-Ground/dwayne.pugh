@@ -1,10 +1,9 @@
 /* =========================================================================
    resume.js — renders resume.md into the page.
 
-   resume.md is the single source of truth for the résumé. Both resume.html
-   (the styled site page) and resume-print.html (the plain page that
-   scripts/build-resume-pdf.sh prints to assets/dwayne-pugh-resume.pdf) load
-   this file and call ResumeRender.mount(mode).
+   resume.md is the source for the résumé page (resume.html), which loads
+   this file and calls ResumeRender.mount(). The downloadable PDF is made
+   separately; see "Updating the résumé" in README.md.
 
    Only the small Markdown subset resume.md uses is supported:
      # Name              then a title paragraph and a contact paragraph
@@ -241,37 +240,11 @@
     return doc.sections.map(sectionSite).join('');
   }
 
-  // ---- Print rendering (resume-print.html) -------------------------------
-  function entryPrint(e, level) {
-    var h = '<div class="entry"><h' + level + ' class="entry__head"><span>' + inline(e.heading) +
-      '</span><span class="entry__date">' + inline(e.date) + '</span></h' + level + '>';
-    e.paras.forEach(function (p) { h += '<p>' + inline(p) + '</p>'; });
-    if (e.bullets.length) h += '<ul>' + e.bullets.map(function (b) { return '<li>' + inline(b) + '</li>'; }).join('') + '</ul>';
-    return h + '</div>';
-  }
-
-  function renderPrint(doc) {
-    var h = '<header class="head"><h1>' + inline(doc.name) + '</h1><p class="head__title">' + inline(doc.title) +
-      '</p><p class="head__contact">' + inline(doc.contact) + '</p></header>';
-    doc.sections.forEach(function (s) {
-      h += '<section><h2>' + inline(s.title) + '</h2>';
-      s.intro.forEach(function (p) { h += '<p>' + inline(p) + '</p>'; });
-      if (s.items.length) h += '<ul>' + s.items.map(function (i) { return '<li>' + inline(i) + '</li>'; }).join('') + '</ul>';
-      s.groups.forEach(function (g) {
-        if (g.name) h += '<h3 class="employer">' + inline(g.name) + '</h3>';
-        h += g.entries.map(function (e) { return entryPrint(e, g.name ? 4 : 3); }).join('');
-      });
-      s.trailing.forEach(function (p) { h += '<p>' + inline(p) + '</p>'; });
-      h += '</section>';
-    });
-    return h;
-  }
-
   // ---- Mount -------------------------------------------------------------
   function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
   function setHtml(id, v) { var el = document.getElementById(id); if (el) el.innerHTML = v; }
 
-  function mount(mode) {
+  function mount() {
     var target = document.getElementById('resume-body');
     return fetch('resume.md', { cache: 'no-cache' })
       .then(function (r) {
@@ -280,7 +253,7 @@
       })
       .then(function (md) {
         var doc = model(md);
-        target.innerHTML = mode === 'print' ? renderPrint(doc) : renderSite(doc);
+        target.innerHTML = renderSite(doc);
         document.documentElement.setAttribute('data-resume', 'ready');
       })
       .catch(function (err) {

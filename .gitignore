@@ -4,3 +4,6 @@ assets/*.pptx
 assets/SRE_*.pdf
 assets/devops-sre_resume_*.pdf
 assets/tech-instructor-resume_*
+
+# Local Python env for scripts/make-public-resume-pdf.py
+.venv/
